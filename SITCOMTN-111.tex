@@ -245,8 +245,8 @@ the determinant of which matches Eq.~13 of \citet{1993JOSAA..10.2277R}.
 
 Note that Eq.'s~\ref{eq:map}~and~\ref{eq:jacobian} reproduce Eq.'s~22-28 from \citet{2015ApOpt..54.9045X} if you take the definition of $m$ from the \texttt{CompensableImage} class in WEP version 8.
 
-The equations above assume a wave that is converging on the center of the focal plane.
-This is a poor assumption for wide field angles, for which we use a numerical model fit using \texttt{Batoid}.
+The equations above apply to sources near the optical axis, but at large field angles there are additional distortion effects these equations do not account for.
+For large field angles, therefore, we use a numerical model fit using \texttt{Batoid}.
 In this model, we represent the OPD in a Zernike series:
 \begin{align}
   W(\mathbf{u}_p) = \sum_i \alpha_i Z_i(\mathbf{u}_p),
@@ -482,7 +482,6 @@ However, a simple argument shows that the noise in $M_{ij}$ can be neglected and
 \end{enumerate}
 
 
-
 \subsection{Inversion via Artificial Intelligence}
 \label{sec:ai}
 
@@ -490,12 +489,11 @@ Rather than implementing the mapping equations of Section~\ref{sec:mapping} to s
 For more details on this approach and comparisons to the TIE see \citet{2024AJ....167...86C}.
 
 
-
-
 \appendix
 % Include all the relevant bib files.
 % https://lsst-texmf.lsst.io/lsstdoc.html#bibliographies
 \section{References} \label{sec:bib}
+\vspace*{-1.25cm}
 \renewcommand{\refname}{} % Suppress default Bibliography section
 \bibliography{local,lsst,lsst-dm,refs_ads,refs,books}
 
