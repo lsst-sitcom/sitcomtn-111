@@ -85,6 +85,8 @@ Section~\ref{sec:estimation} discusses different methods for estimating the wave
 
 In this section we define the wavefront of the telescope and derive a mapping from photon positions on the pupil to the corresponding positions on the image plane.
 
+\subsection{The On Axis and Paraxial Models}
+
 The optical system of a telescope can be treated as a black box which receives an incoming wave on the pupil plane and converts that wave to one converging on the focal plane (Fig.~\ref{fig:telescope}).
 For example, ignoring phase perturbations from e.g. atmospheric turbulence, we can assume the incoming wave is a plane wave with phase
 \begin{align}
@@ -97,7 +99,7 @@ After passing through the optical system, the wave emerges with the phase
 \end{align}
 where $f$ is the focal length of the system and we have defined $z=0$ at the pupil.
 
-We define the wavefront at the pupil using the reference sphere, which we define as the sphere with radius $f$ that is centered on the focal plane and tangent to the center of the pupil -- i.e., the first emerging wavefront on the right of Fig.~\ref{fig:telescope}.
+We define the wavefront at the pupil using the reference sphere, which we define as the sphere with radius $f$ that is centered on the focal plane and passes through the center of the pupil -- i.e., the first emerging wavefront on the right of Fig.~\ref{fig:telescope}.
 The points on the reference sphere are the set
 \begin{align}
   \left\{ 
@@ -191,6 +193,7 @@ It is convenient to rewrite Eq.~\ref{eq:map-physical} in terms of the normalized
 \begin{align}
     \mathbf{u} = (u, v) &\equiv \frac{1}{R_p} \mathbf{x} \\
     \mathbf{u'} = (u', v') &\equiv \frac{1}{R_i} \Big[ \mathbf{x} + f \nabla_\mathbf{x} W(\mathbf{0}) \Big].
+    \label{eq:normalized-coords}
 \end{align}
 In these coordinates, the unaberrated pupil has a radius of $1$ on both the pupil and image planes, and the aberrated pupil is centered on both the pupil and image planes.
 With these coordinate transformations, the mapping from pupil to image plane is
@@ -198,6 +201,7 @@ With these coordinate transformations, the mapping from pupil to image plane is
     \mathbf{u'}_{\!i}^\pm = \mp \sqrt{\frac{4 N^2 - 1}{4 N^2 - \mathbf{u}_p^2}} \, \mathbf{u}_p - \frac{2 N \sqrt{4 N^2 - 1}}{\ell} \Big[ \nabla_\mathbf{u} W(\mathbf{u}_p) - \nabla_\mathbf{u} W(\mathbf{0}) \Big].
     \label{eq:map}
 \end{align}
+This formula is implemented in WEP as the ``on axis'' model.
 In the limit of $N \gg 1$, we have
 \begin{align}
     \mathbf{u'}_{\!i}^\pm = \mp \mathbf{u}_p - \frac{4 N^2}{\ell} \Big[ \nabla_\mathbf{u} W(\mathbf{u}_p) - \nabla_\mathbf{u} W(\mathbf{0}) \Big],
@@ -237,13 +241,18 @@ In particular, $\mathds{1}_2$ is the $2 \times 2$ identity matrix, the outer pro
     \end{pmatrix},
 \end{align}
 and $d^2 W(\mathbf{u}_p) / d \mathbf{u}^2$ is the Hessian matrix.
+This is the Jacobian of the ``on axis'' model in WEP.
 In the limit $N \gg 1$, this becomes
 \begin{align}
-    \frac{d\mathbf{u'}_{\!i}^\pm}{d\mathbf{u}_p} = \mp \mathds{1}_2 - \frac{4 N^2}{\ell} \frac{d^2 W(\mathbf{u}_p)}{d \mathbf{u}^2}.
+    \frac{d\mathbf{u'}_{\!i}^\pm}{d\mathbf{u}_p} = \mp \mathds{1}_2 - \frac{4 N^2}{\ell} \frac{d^2 W(\mathbf{u}_p)}{d \mathbf{u}^2},
 \end{align}
 the determinant of which matches Eq.~13 of \citet{1993JOSAA..10.2277R}.
+This is the Jacobian of the ``paraxial'' model in WEP.
 
-Note that Eq.'s~\ref{eq:map}~and~\ref{eq:jacobian} reproduce Eq.'s~22-28 from \citet{2015ApOpt..54.9045X} if you take the definition of $m$ from the \texttt{CompensableImage} class in WEP version 8.
+Note that the on axis Eq.'s~\ref{eq:map}~and~\ref{eq:jacobian} reproduce Eq.'s~22-28 from \citet{2015ApOpt..54.9045X} if you take the definition of $m$ from the \texttt{CompensableImage} class in WEP version 8.
+
+\subsection{The Off Axis Model}
+\label{sec:off-axis}
 
 The equations above apply to sources near the optical axis, but at large field angles there are additional distortion effects these equations do not account for.
 For large field angles, therefore, we use a numerical model fit using \texttt{Batoid}.
@@ -266,6 +275,7 @@ That is,
   \frac{d\mathbf{u'}_{\!i}^\pm}{d\mathbf{u}_p} = - \frac{2N \sqrt{4N^2 - 1}}{\ell} \frac{d^2 W(\mathbf{u}_p)}{d \mathbf{u}^2}.
 \end{align}
 Note the Batoid coefficients only account for off-axis projection effects and do not account for the intrinsic aberrations associated with the telescope.
+These formulae are implemented in WEP as the ``off axis'' model.
 
 
 \section{Inferring the Wavefront from Defocused Images}
@@ -457,14 +467,17 @@ This is just a linear system.
 If we define the vector
 \begin{align}
     b_i = \sum_{a, b} ~ (Z_i)_{ab} \left(\frac{\partial I}{\partial z}\right)_{ab}
+    \label{eq:exp-vector}
 \end{align}
 and the matrix
 \begin{align}
     M_{ij} = -\frac{1}{R^2} \sum_{a,b} ~ I_{ab} \, (\nabla_\mathbf{u} Z_i \cdot \nabla_\mathbf{u} Z_j)_{ab},
+    \label{eq:exp-matrix}
 \end{align}
 then we seek to solve the equation
 \begin{align}
     b_i = \sum_j M_{ij} \alpha_j.
+    \label{eq:exp-system}
 \end{align}
 Of course with real data there is no guarantee a solution exists.
 Instead, we treat this as a regression problem and minimize the squared residuals of $b_i$.
@@ -478,8 +491,9 @@ However, a simple argument shows that the noise in $M_{ij}$ can be neglected and
     \item Due to the normalization condition (Eq.~\ref{eq:norm}), the values of $Z_i$ and $\nabla_\mathbf{u} Z_i$ are $\mathcal{O}(1)$.
     \item The errors in $M_{ij}$ are connected to the variables $b_i$ by the Zernike coefficients $\alpha_j$, which are  $\alpha_j \lesssim \mathcal{O}(10^{-6} \,\text{m})$ by assumption.
     \item Therefore the errors in $M_{ij}$ propagated to $b_i$ are roughly 8 orders of magnitude smaller than the errors native to $b_i$.
-    
 \end{enumerate}
+Furthermore, the wavefront error due to pixel noise is subdominant to the phase variance due to atmospheric turbulence.
+For the impact of atmospheric turbulence on Zernike coefficient estimation, see Appendix~D of \citet{2024AJ....167...86C}.
 
 
 \subsection{Inversion via Artificial Intelligence}
@@ -489,22 +503,98 @@ Rather than implementing the mapping equations of Section~\ref{sec:mapping} to s
 For more details on this approach and comparisons to the TIE see \citet{2024AJ....167...86C}.
 
 
-\appendix
+\newpage
+
+
 % Include all the relevant bib files.
 % https://lsst-texmf.lsst.io/lsstdoc.html#bibliographies
-\section{References} \label{sec:bib}
-\vspace*{-1.25cm}
+\section*{References} \label{sec:bib}
+\vspace*{-1.5cm}
 \renewcommand{\refname}{} % Suppress default Bibliography section
 \bibliography{local,lsst,lsst-dm,refs_ads,refs,books}
 
-% Make sure lsst-texmf/bin/generateAcronyms.py is in your path
-\section{Acronyms} \label{sec:acronyms}
+\section*{Acronyms} \label{sec:acronyms}
 \input{acronyms.tex}
-% If you want glossary uncomment below -- comment out the two lines above
-%\printglossaries
 
 
+\newpage
 
 
+\appendix
+
+\section{Pupil to Image Mapping for Off-axis Points}
+
+In this appendix we will generalize the derivations of Section~\ref{sec:mapping} for off-axis image points.
+
+The wavefront of a spherical wave emerging from the pupil and converging on a point $(z, \mathbf{x}) = (f, \mathbf{x}_i^0)$ is
+\begin{align}
+    \varphi(z, \mathbf{x}) = -k \sqrt{(z - f)^2 + (\mathbf{x} - \mathbf{x}_i^0)^2}.
+\end{align}
+The phase gradient on the reference sphere is
+\begin{align}
+    \nabla \varphi(\mathbf{x}_p) = \frac{k}{\tilde{f}} \left(
+        \sqrt{\tilde{f} - (\mathbf{x}_p - \mathbf{x}_i^0)^2} ~ \hat{\mathbf{z}} - (\mathbf{x}_p - \mathbf{x}_i^0)
+    \right),
+\end{align}
+where we defined $\tilde{f} = \sqrt{f^2 + (\mathbf{x}_i^0)^2}$ and used $z_p = f - \sqrt{\tilde{f}^2 - (\mathbf{x}_p - \mathbf{x}_i^0)^2}$.
+You can now see the unperturbed wave emerges from $(z_p, \mathbf{x}_p)$ and converges on $(f, \mathbf{x}_i^0)$.
+Again adding the phase perturbation $\delta \varphi = -k \, W(\mathbf{x}_p)$ yields the gradient
+\begin{align}
+    \nabla \varphi(\mathbf{x}_p) = \frac{k}{\tilde{f}} \left(
+        \sqrt{\tilde{f} - (\mathbf{x}_p - \mathbf{x}_i^0)^2} ~ \hat{\mathbf{z}} - (\mathbf{x}_p - \mathbf{x}_i^0) - \tilde{f} \nabla_\mathbf{x} W(\mathbf{x}_p)
+    \right).
+\end{align}
+
+Using the same similar-triangles argument, we have
+\begin{align}
+    \frac{
+        \mathbf{x}_i^\pm - \mathbf{x}_p
+    }{
+        z_i^\pm - z_p
+    } = \frac{
+        \nabla_\mathbf{x} \varphi(\mathbf{x}_p)
+    }{
+        ~ \partial \varphi(\mathbf{x}_p) / \partial z ~
+    }
+    ~ \implies ~ 
+    \frac{
+        \mathbf{x}_i^\pm - \mathbf{x}_p
+    }{
+        \sqrt{f^2 - \mathbf{x}_p} \pm \ell
+    } = 
+    \frac{
+        - (\mathbf{x}_p - \mathbf{x}_i^0) - \tilde{f} \nabla_\mathbf{x} W(\mathbf{x}_p)
+    }{
+        \sqrt{\tilde{f} - (\mathbf{x}_p - \mathbf{x}_i^0)^2}
+    }.
+\end{align}
+Isolating the image position:
+\begin{align}
+    \mathbf{x}_i^\pm - \mathbf{x}_i^0 = \mp \frac{\ell}{\sqrt{\tilde{f}^2 - (\mathbf{x}_p - \mathbf{x}_i^0)^2}} \, \mathbf{x}_p - \tilde{f} \left( 1 \pm \frac{\ell}{\sqrt{\tilde{f}^2 - (\mathbf{x}_p - \mathbf{x}_i^0)^2}} \right) \nabla_\mathbf{x} W(\mathbf{x}_p).
+\end{align}
+Again, for the aberration term we can safely discard the term of order $\mathcal{O}(\ell / \tilde{f})$, yielding
+\begin{align}
+    \mathbf{x}_i^\pm - \mathbf{x}_i^0 = \mp \frac{\ell}{\sqrt{\tilde{f}^2 - (\mathbf{x}_p - \mathbf{x}_i^0)^2}} \, \mathbf{x}_p - \tilde{f} \nabla_\mathbf{x} W(\mathbf{x}_p).
+    \label{eq:map-physical-offcenter}
+\end{align}
+We can use the same normalized coordinates of Eq.~\ref{eq:normalized-coords}, except we now absorb $\mathbf{x}_i^0$ into the centering of the image coordinates.
+We can also use $\mathbf{x}_i^0 = -f \theta = -2 N R_p \, \theta$ where the $\theta$ is the field angle of the source in radians, and the negative sign is due to the fact that Rubin has an odd number of mirrors (for Rubin this formula is accurate to one part in ten thousand even at wide field angles).
+With these definitions, and plugging in the definition of $\tilde{f}$, Eq.~\ref{eq:map-physical-offcenter} becomes
+\begin{align}
+    \mathbf{u'}_{\!i}^\pm = \mp \sqrt{\frac{4 N^2 - 1}{4 N^2 - \mathbf{u}_p^2 + 4 N (\mathbf{u}_p \!\cdot \theta\,)\,}} ~ \mathbf{u}_p - \frac{2 N \sqrt{(4 N^2 - 1)(1 - \theta^2)}}{\ell} \Big[ \nabla_\mathbf{u} W(\mathbf{u}_p) - \nabla_\mathbf{u} W(\mathbf{0}) \Big].
+\end{align}
+
+Taking the derivative of this mapping yields the Jacobian
+\begin{align}
+    \frac{d\mathbf{u'}_{\!i}^\pm}{d\mathbf{u}_p} = 
+    \sqrt{\frac{4 N^2 - 1}{4 N^2 - \mathbf{u}_p^2 + 4 N (\mathbf{u}_p \!\cdot \theta\,)\,}} \left[
+        \mp \mathds{1}_2 + \frac{(\mathbf{u}_p - 2 N \theta) \otimes \mathbf{u}_p}{4 N^2 - \mathbf{u}_p^2 + 4 N (\mathbf{u}_p \!\cdot \theta\,)\,}
+    \right]
+    - \frac{2 N \sqrt{(4 N^2 - 1)(1 - \theta^2)}}{\ell} \frac{d^2 W(\mathbf{u}_p)}{d \mathbf{u}^2}.
+\end{align}
+
+These formulae mildly improve the accuracy of the on axis model when applied to off-axis points near the center of the focal plane.
+However, these formulae plus the inclusion of the intrinsic telescope aberrations in $W(\mathbf{u}_p)$ are not sufficient for accurately modeling wide field angles for Rubin.
+As such, these formulae are not currently implemented in WEP and the numerical off-axis model described in Section~\ref{sec:off-axis} is used instead.
 
 \end{document}
